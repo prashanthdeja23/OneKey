@@ -45,8 +45,8 @@
 {
     [super viewDidAppear:animated];
     
-    NSString *serviceUUID=@"713D0000-503E-4C75-BA94-3148F18D941E";
-    [_manager connectToPeripheralWithService:[NSArray arrayWithObject:serviceUUID]];
+//    NSString *serviceUUID=;
+//    [_manager connectToPeripheralWithService:[NSArray arrayWithObject:serviceUUID]];
    // [_locationManager startRangingBeaconsInRegion:[[OKBeaconManager sharedManager] regionToBeRanged]];
     
 }

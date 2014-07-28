@@ -7,10 +7,12 @@
 //
 
 #import "OKContainerViewController.h"
+#import "OKUtility.h"
 
 #define SegueWelcome @"welcomeSegue"
 #define SegueSettings @"SettingSegue"
 #define SegueDoor @"DoorSegue"
+#define SegueBadge @"BadgeSegue"
 
 @interface OKContainerViewController ()
 
@@ -34,6 +36,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     
+    self.view.backgroundColor=[OKUtility colorFromHexString:@"2CA4CE"];
     // Show welcome Screen
     
     self.currentSegueIdentifier = SegueWelcome;
@@ -47,6 +50,15 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (UIColor*)currentViewControllerBackGroundColor
+{
+    if (self.childViewControllers.count)
+    {
+        return ((UIViewController*)self.childViewControllers[0]).view.backgroundColor;
+    }
+    return nil;
+}
+
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
@@ -54,21 +66,20 @@
 {
     // Get the new view controller using [segue destinationViewController].
     // Pass the selected object to the new view controller.
-    if (![segue.identifier isEqualToString:self.currentSegueIdentifier])
+    
+    if ([self.childViewControllers count])
     {
-        if ([self.childViewControllers count])
-        {
-            [self swapFromViewController:[self.childViewControllers objectAtIndex:0] toViewController:segue.destinationViewController];
-            self.currentSegueIdentifier=segue.identifier;
-        }
-        else
-        {
-            [self addChildViewController:segue.destinationViewController];
-            ((UIViewController *)segue.destinationViewController).view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
-            [self.view addSubview:((UIViewController *)segue.destinationViewController).view];
-            [segue.destinationViewController didMoveToParentViewController:self];
-        }
+        [self swapFromViewController:[self.childViewControllers objectAtIndex:0] toViewController:segue.destinationViewController];
+        self.currentSegueIdentifier=segue.identifier;
     }
+    else
+    {
+        [self addChildViewController:segue.destinationViewController];
+        ((UIViewController *)segue.destinationViewController).view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+        [self.view addSubview:((UIViewController *)segue.destinationViewController).view];
+        [segue.destinationViewController didMoveToParentViewController:self];
+    }
+
 }
 
 - (void)swapFromViewController:(UIViewController *)fromViewController toViewController:(UIViewController *)toViewController
@@ -77,7 +88,7 @@
     
     [fromViewController willMoveToParentViewController:nil];
     [self addChildViewController:toViewController];
-    [self transitionFromViewController:fromViewController toViewController:toViewController duration:1.0 options:UIViewAnimationOptionTransitionCrossDissolve animations:nil completion:^(BOOL finished) {
+    [self transitionFromViewController:fromViewController toViewController:toViewController duration:.25 options:UIViewAnimationOptionTransitionCrossDissolve animations:nil completion:^(BOOL finished) {
         [fromViewController removeFromParentViewController];
         [toViewController didMoveToParentViewController:self];
     }];
@@ -87,12 +98,13 @@
 {
     if (index)
     {
-        self.currentSegueIdentifier=(index==2)?SegueDoor:SegueSettings;
+        self.currentSegueIdentifier=(index==3)?SegueBadge:(index==2)?SegueDoor:SegueSettings;
     }
     else
     {
         self.currentSegueIdentifier=SegueWelcome;
     }
      [self performSegueWithIdentifier:self.currentSegueIdentifier sender:nil];
+    
 }
 @end

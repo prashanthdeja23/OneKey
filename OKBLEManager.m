@@ -80,23 +80,6 @@
     }
 }
 
--(void)connectToPeripheralWithService:(NSArray*)serviceIds
-{
-    self.connectOnUp=YES;
-    self.serviceUUIDs=[self uuidArrayForStringArray:serviceIds];
-    
-    if (!_centralManager)
-    {
-        _centralManager=[[CBCentralManager alloc] initWithDelegate:self queue:nil];
-    }
-    else if (self.isConnectedForBLE)
-    {
-        self.connectOnUp=NO;
-        
-        [self startDiscoveringPheripheralWithServiceID:self.serviceUUIDs];
-    }
-    
-}
 
 - (void)startDiscoveringPheripheralWithServiceID:(NSArray*)serviceUUIDs
 {
@@ -110,15 +93,15 @@
     }
 }
 
-- (void)stopDiscovery
-{
-    [self.centralManager stopScan];
-}
+
 
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
     //[central connectPeripheral:peripheral options:nil];
-    NSLog(@" %@",peripheral.name);
+    if ([_delegate respondsToSelector:@selector(OKBLManager:DidDiscoverDevice:adData:andRssi:)])
+    {
+        [_delegate OKBLManager:self DidDiscoverDevice:peripheral adData:advertisementData andRssi:RSSI];
+    }
 }
 
 - (void)centralManager:(CBCentralManager *)central
@@ -130,6 +113,50 @@
     }
 }
 
+- (void)connectToPeripheral:(CBPeripheral*)peripheral
+{
+    [self.centralManager connectPeripheral:peripheral options:nil];
+}
+
+- (void)startScanForPeripheralWithServiceIds:(NSArray*)serviceIds
+{
+    if (!_centralManager)
+    {
+        _centralManager=[[CBCentralManager alloc] initWithDelegate:self queue:nil];
+    }
+    
+    self.serviceUUIDs=[self uuidArrayForStringArray:serviceIds];
+    if (self.isConnectedForBLE )
+    {
+        [self startDiscoveringPheripheralWithServiceID:self.serviceUUIDs];
+    }
+    else
+    {
+        [self performSelector:@selector(startDiscoveringPheripheralWithServiceID:) withObject:self.serviceUUIDs afterDelay:2.0];
+    }
+    
+}
+
+- (void)discoverServices:(NSArray*)serviceUUIDs forPheripheral:(CBPeripheral*)peripheral
+{
+    peripheral.delegate=self;
+    [peripheral discoverServices:serviceUUIDs];
+}
+- (void)stopDiscovery
+{
+    [self.centralManager stopScan];
+}
+
 #pragma mark BLEScane End-
 
+#pragma mark - peripheral services mehods
+
+- (void)peripheralDidUpdateRSSI:(CBPeripheral *)peripheral error:(NSError *)error
+{
+    // DId update peripheral..
+}
+- (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
+{
+   
+}
 @end

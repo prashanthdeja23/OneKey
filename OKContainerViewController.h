@@ -12,4 +12,6 @@
 
 - (void)loadViewAtIndex:(int)index;
 
+- (UIColor*)currentViewControllerBackGroundColor;
+
 @end

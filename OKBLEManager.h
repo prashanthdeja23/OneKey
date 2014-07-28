@@ -13,8 +13,7 @@
 
 @protocol OKBLManagerDelegate <NSObject>
 - (void)OKBLManager:(OKBLEManager*)manager didConnectToPeripheral:(CBPeripheral*)peripheralDevice;
-- (void)OKBLManagerDidUpdateState:(OKBLEManager*)manager;
-- (void)OKBLManagerDidFailToConnect:(OKBLEManager*)manager;
+- (void)OKBLManager:(OKBLEManager*)manager DidDiscoverDevice:(CBPeripheral*)peripheralDevice adData:(NSDictionary*)adData andRssi:(NSNumber*)rssi;
 @end
 
 enum BLEConnectionState
@@ -26,14 +25,15 @@ enum BLEConnectionState
     BLEConnectionStateConnected
 };
 
-@interface OKBLEManager : NSObject <CBCentralManagerDelegate>
+@interface OKBLEManager : NSObject <CBCentralManagerDelegate,CBPeripheralDelegate>
 
 @property (nonatomic)BOOL   isConnectedForBLE;
 @property (nonatomic,weak) __weak id <OKBLManagerDelegate> delegate;
 @property (nonatomic)enum BLEConnectionState connectionState;
 
 + (OKBLEManager *)sharedManager;
-- (void)connectToPeripheralWithService:(NSArray*)serviceIds;
 
+- (void)connectToPeripheral:(CBPeripheral*)peripheral;
+- (void)startScanForPeripheralWithServiceIds:(NSArray*)serviceIds;
 
 @end

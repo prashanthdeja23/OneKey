@@ -7,8 +7,13 @@
 //
 
 #import "OKLoginViewController.h"
+#import "OKUtility.h"
 
 @interface OKLoginViewController ()
+{
+    IBOutlet UILabel            *usernameLabel;
+    IBOutlet UILabel            *passLabel;
+}
 
 @property (nonatomic)BOOL isKeyBoardUp;
 @end
@@ -46,6 +51,9 @@
 {
     [super viewDidLoad];
     self.navigationItem.titleView=[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"titleImage.png"]];
+    self.view.backgroundColor=[OKUtility colorFromHexString:@"A7EAFC"];
+
+    usernameLabel.textColor=passLabel.textColor=[OKUtility colorFromHexString:@"148AB2"];
     
     // Do any additional setup after loading the view.
 }
@@ -54,6 +62,7 @@
 {
     [super viewWillAppear: animated];
     [self registerForKeyBoardNotifications];
+
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -123,6 +132,8 @@
 
 - (void)pushMainScreen
 {
+    userNameField.text=passwordField.text=@"";
+    
     UIStoryboard *mainBoard=[UIStoryboard storyboardWithName:@"Main" bundle:nil];
     id mainScreen=[mainBoard instantiateViewControllerWithIdentifier:@"MainVC"];
     UINavigationController *navController=[[UINavigationController alloc] initWithRootViewController:mainScreen];

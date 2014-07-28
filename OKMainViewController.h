@@ -9,10 +9,19 @@
 #import <UIKit/UIKit.h>
 #import "OKContainerViewController.h"
 @interface OKMainViewController : UIViewController
-
+{
+   
+    
+}
 - (IBAction)clickedOptionsButton:(UIButton*)btn;
 
-@property (nonatomic, weak)IBOutlet OKContainerViewController *containerViewController;
+@property (nonatomic, weak) OKContainerViewController *containerViewController;
+@property (nonatomic,strong) IBOutlet UIView                   *containerView;
+@property (nonatomic,strong) IBOutlet UIView                   *btnsView;
+@property (nonatomic,strong) IBOutlet UIView                   *profileInfoView;
+@property (nonatomic,strong) IBOutlet UIImageView              *profileImageView;
+
+- (IBAction)badgeImageClicked:(UIButton*)btn;
 
 
 @end

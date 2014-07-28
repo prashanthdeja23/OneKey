@@ -7,14 +7,15 @@
 //
 
 #import "OKAppDelegate.h"
-
+#import "OKUtility.h"
 @implementation OKAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     // Override point for customization after application launch.
-    [[UINavigationBar appearance] setBarTintColor:[UIColor colorWithRed:46.0/255 green:166.0/255 blue:207.0/255 alpha:1]];
-    [[UINavigationBar appearance] setTintColor:[UIColor lightGrayColor]];
+    sleep(2.0);
+    [[UINavigationBar appearance] setBarTintColor:[OKUtility colorFromHexString:@"35B5D8"]];
+    [[UINavigationBar appearance] setTintColor:[OKUtility colorFromHexString:@"1B96C1"]];
     return YES;
 }
 							
