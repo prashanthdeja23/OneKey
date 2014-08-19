@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "AFNetworking.h"
 
 @interface OKLoginViewController : UIViewController <UITextFieldDelegate>
 {
@@ -15,6 +16,10 @@
     IBOutlet UITextField            *userNameField;
     IBOutlet UITextField            *passwordField;
     IBOutlet UILabel                *loginFailed;
+    IBOutlet UITextField            *serverField;
+    
+    IBOutlet UIActivityIndicatorView    *actIndicator;
+    
     
 }
 

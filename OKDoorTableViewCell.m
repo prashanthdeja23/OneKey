@@ -7,13 +7,15 @@
 //
 
 #import "OKDoorTableViewCell.h"
+#import <CoreBluetooth/CoreBluetooth.h>
 
 @implementation OKDoorTableViewCell
 
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
-    if (self) {
+    if (self)
+    {
         
         // Initialization code
         doorDistance=[[UILabel alloc] initWithFrame:CGRectZero];
@@ -53,14 +55,14 @@
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
 {
     [super setSelected:selected animated:animated];
-
     // Configure the view for the selected state
 }
 
 - (void)display
 {
-    doorDistance.text=[NSString stringWithFormat:@"%@",[self.doorInfo objectForKey:@"rssi"]];
+    doorDistance.text=[NSString stringWithFormat:@"%.0f",[[self.doorInfo objectForKey:@"rssi"] floatValue]];
     doorName.text=[self.doorInfo objectForKey:@"name"];
+    btnUnlock.hidden=NO;
 }
 
 @end

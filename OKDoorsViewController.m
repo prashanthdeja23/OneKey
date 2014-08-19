@@ -10,18 +10,20 @@
 #import "OKDoorTableViewCell.h"
 #import "OKUtility.h"
 #import <CoreBluetooth/CoreBluetooth.h>
-
-#define UI_DEMO 1
-#define BLE_SERVICE_UUID @"713D0000-503E-4C75-BA94-3148F18D941E"
-
+#import "OKBLEPeripheral.h"
+#import "OKMotionManager.h"
 
 @interface OKDoorsViewController ()
 {
     IBOutlet UITableView        *doorsTableView;
+    IBOutlet UIView             *headerView;
+    IBOutlet UILabel            *noDoorsLabel;
+    BOOL                        shouldRefresh;
 }
 
 @property (nonatomic,strong)OKBLEManager *bleManager;
-@property (nonatomic,strong)NSMutableArray *bleDevices;
+//@property (nonatomic,strong)NSMutableArray *bleDevices;
+@property (nonatomic) BOOL                  readRssi;
 
 @end
 
@@ -36,26 +38,52 @@
     return self;
 }
 
+-(void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    self.readRssi=NO;
+    shouldRefresh=NO;
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    shouldRefresh=YES;
+    
+}
+
+//- (void)updateRssi
+//{
+//    if (self.readRssi)
+//    {
+//        OKBLEManager *manager=[OKBLEManager sharedManager];
+//        for (CBPeripheral *peripheral in self.bleDevices)
+//        {
+//            [manager peripheralReadRssiValue:peripheral];
+//        }
+//        
+//    }
+//    [self performSelector:@selector(updateRssi) withObject:nil afterDelay:0.5];
+//}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     
-    if (UI_DEMO)
-    {
-        self.bleDevices=[NSMutableArray arrayWithArray:[self dummyDoorsArray]];
-    }
-    else
-    {
-        self.bleManager=[OKBLEManager sharedManager];
-        self.bleManager.delegate=self;
-        
-        self.bleDevices=[NSMutableArray array];
-        [self startLookingForDoors];
-    }
-   
+    self.bleManager=[OKBLEManager sharedManager];
+    self.bleManager.delegate=self;
+    
+    OKMotionManager *motionManager=[OKMotionManager sharedManager];
+    [motionManager startMotionUpdates];
+    
+    //self.bleDevices=[NSMutableArray array];
+    
     
     self.view.backgroundColor=[OKUtility colorFromHexString:@"1B96C1"];
     
+    [self refreshBLEInfo];
     // Do any additional setup after loading the view.
 }
 
@@ -80,46 +108,59 @@
     // Pass the selected object to the new view controller.
 }
 */
-- (NSDictionary *)dictionaryForPeripheral:(CBPeripheral*)peripheral
+
+- (NSDictionary *)dictionaryForPeripheral:(OKBLEPeripheral*)peripheralInfo
 {
     NSMutableDictionary *dict=[[NSMutableDictionary alloc] init];
-    [dict setObject:peripheral.name forKey:@"name"];
-    [dict setObject:(!peripheral.RSSI)?[NSNumber numberWithInt:0]:peripheral.RSSI forKey:@"rssi"];
+    [dict setObject:peripheralInfo.peripheral.name forKey:@"name"];
+    [dict setObject:[peripheralInfo avgRssi] forKey:@"rssi"];
+    [dict setObject:[NSNumber numberWithInteger:peripheralInfo.peripheral.state] forKey:@"state"];
     
     return dict;
 }
 
 #pragma mark - Table View Delegates
 
--(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+//-(UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+//{
+//    UIView *view=nil;
+//    
+//    return view;
+//}
+
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UIView *view=nil;
-    if (self.bleDevices.count)
-    {
-        // DO Nothing.
-    }
-    else
-    {
-        view=[[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 50)];
-        view.backgroundColor=[UIColor clearColor];
-        UILabel *title=[[UILabel alloc] initWithFrame:view.bounds];
-        [view addSubview:title];
-        title.text=@"  Scanning for doors ...";
-        title.font=[UIFont boldSystemFontOfSize:18];
-        title.textColor=[UIColor whiteColor];
-        
-    }
-    return view;
+    // Unlock Door;
+    tableView.userInteractionEnabled=NO;
+     doorsTableView.alpha=0.7;
+    
+    [self.bleManager openDoorAtIndex:(int)indexPath.row];
+    
+    //[manager peripheral:peripheralDevice.peripheral writeToCharacterstic:CHARACTERSTIC_UUID forServiceID:BLE_SERVICE_UUID data:[manager getDataToWrite]];
 }
 
 -(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
 {
-    return self.bleDevices.count?0:50;
+    return self.bleManager.intrestedBLEPeripherals.count?0:50;
 }
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return self.bleDevices.count;
+    if (self.bleManager.intrestedBLEPeripherals.count)
+    {
+        // DO Nothing.
+        tableView.hidden=NO;
+        noDoorsLabel.hidden=YES;
+    }
+    else
+    {
+        tableView.hidden=YES;
+        noDoorsLabel.hidden=NO;
+        
+    }
+    
+    return self.bleManager.intrestedBLEPeripherals.count;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -132,7 +173,7 @@
     static NSString *cellId=@"CellIdentifier";
     OKDoorTableViewCell *cell= (OKDoorTableViewCell*)[tableView dequeueReusableCellWithIdentifier:cellId];
     
-    NSDictionary *doorInfo=[self.bleDevices objectAtIndex:indexPath.row];
+    NSDictionary *doorInfo = [self dictionaryForPeripheral:[self.bleManager.intrestedBLEPeripherals objectAtIndex:indexPath.row]];
     
     if (cell==nil)
     {
@@ -140,46 +181,49 @@
     }
     cell.doorInfo=doorInfo;
     [cell display];
-    
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
     return cell;
 }
 
-- (void)addDeviceIfNotYet:(CBPeripheral*)peripheral
-{
-    int index=0;
-    for (CBPeripheral *device in self.bleDevices)
-    {
-        if ([device.name isEqualToString:peripheral.name])
-            break;
-        index++;
-    }
-    if (index<self.bleDevices.count)
-    {
-        //Found at index;
-        [self.bleDevices replaceObjectAtIndex:index withObject:peripheral];
-        // Refresh TableView;
-    }
-    else
-    {
-        [self.bleDevices addObject:peripheral];
-    }
-}
+//- (void)updatePeripheral:(CBPeripheral*)peripheral
+//{
+//    int index=0;
+//    for (CBPeripheral *device in self.bleDevices)
+//    {
+//        if ([device.name isEqualToString:peripheral.name])
+//            break;
+//        index++;
+//    }
+//    
+//    if (index<self.bleDevices.count)
+//    {
+//        //Found at index;
+//        [self.bleDevices replaceObjectAtIndex:index withObject:peripheral];
+//        // Refresh TableView;
+//    }
+//    else
+//    {
+//        [self.bleDevices addObject:peripheral];
+//    }
+//}
 
-- (void)removePeripheral:(CBPeripheral*)peripheral
-{
-    int index=0;
-    for (CBPeripheral *device in self.bleDevices)
-    {
-        if ([device.name isEqualToString:peripheral.name])
-            break;
-        index++;
-    }
-    
-     if (index<self.bleDevices.count)
-     {
-         [self.bleDevices removeObjectAtIndex:index];
-     }
-}
+//- (void)removePeripheral:(CBPeripheral*)peripheral
+//{
+//    int index=0;
+//    for (CBPeripheral *device in self.bleDevices)
+//    {
+//        if ([device.name isEqualToString:peripheral.name])
+//            break;
+//        index++;
+//    }
+//    
+//     if (index<self.bleDevices.count)
+//     {
+//         [self.bleDevices removeObjectAtIndex:index];
+//     }
+//    [doorsTableView reloadData];
+//}
 
 #pragma mark End-
 
@@ -187,45 +231,108 @@
 
 - (void)startLookingForDoors
 {
-    NSArray *serviceIds=[NSArray arrayWithObject:BLE_SERVICE_UUID];
-    [self.bleManager startScanForPeripheralWithServiceIds:serviceIds];
+    //NSArray *serviceIds=[NSArray arrayWithObject:BLE_SERVICE_UUID];
+    [self.bleManager startScanForDoors];
 }
 
 - (void)OKBLManager:(OKBLEManager*)manager DidDiscoverDevice:(CBPeripheral*)peripheralDevice adData:(NSDictionary *)adData andRssi:(NSNumber *)rssi
 {
-    NSLog(@"Name : %@",peripheralDevice.name);
+   // NSLog(@"Name : %@",peripheralDevice.name);
     
-    if ([peripheralDevice.name rangeOfString:@"lock"].location!=NSNotFound)
-    {
-        // Name starts with LOCK.
-        NSArray *splitString=[peripheralDevice.name componentsSeparatedByString:@"-"];
-        if (splitString.count==2)
-        {
-            NSString *rssiString=splitString[1];
-            rssiString=[rssiString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-            if ([rssi integerValue]<=[rssiString integerValue])
-            {
-                // Show device and start conecting .
-                [self addDeviceIfNotYet:peripheralDevice];
-                [doorsTableView reloadData];
-                
-                [self.bleManager connectToPeripheral:peripheralDevice];
-                NSLog(@"Rssi %@",peripheralDevice.RSSI);
-            }
-        }
-        else
-        {
-            // Invalid Device. ignore it - pp
-        }
-    }
+//    if ([peripheralDevice.name rangeOfString:@"lock"].location!=NSNotFound)
+//    {
+//        // Name starts with LOCK.
+//        NSArray *splitString=[peripheralDevice.name componentsSeparatedByString:@"-"];
+//        if (splitString.count == 2)
+//        {
+//            NSString *rssiString=splitString[1];
+//            rssiString=[rssiString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+//            
+//            NSLog(@"Rssi %@",rssi);
+//            
+//            if ([rssi integerValue]<=[rssiString integerValue])
+//            {
+//                // Show device info .
+//                
+//                [self updatePeripheral:peripheralDevice];
+//                [doorsTableView reloadData];
+//                
+//               // [self.bleManager connectToPeripheral:peripheralDevice];
+//                
+//            }
+//        }
+//        else
+//        {
+//            // Invalid Device. ignore it - pp
+//        }
+//    }
+    [doorsTableView reloadData];
 }
 
-- (void)OKBLManager:(OKBLEManager*)manager didConnectToPeripheral:(CBPeripheral*)peripheralDevice
+//- (void)OKBLManager:(OKBLEManager*)manager didConnectToPeripheral:(CBPeripheral*)peripheralDevice
+//{
+//    [self updatePeripheral:peripheralDevice];
+//    
+//    //refresh tableview
+//}
+
+//- (void)OKBLManager:(OKBLEManager*)manager didDisconnectPeripheral:(CBPeripheral*)peripheral;
+//{
+//    [self removePeripheral:peripheral];
+//}
+
+//- (void)OKBLManager:(OKBLEManager*)manager didUpdateRssiForPeripheral:(CBPeripheral*)peripheral error:(NSError*)error;
+//{
+//    if (!error)
+//    {
+//        [self updatePeripheral:peripheral];
+//    }
+//    else
+//    {
+//        // Error reading RSSI- PP
+//    }
+//    
+//}
+//- (void)OKBLManager:(OKBLEManager*)manager didWriteSuccessfullyForPeripheral:(CBPeripheral*)peripheral
+//{
+//    [manager disconnectPeripheral:peripheral];
+//    doorsTableView.userInteractionEnabled=YES;
+//    doorsTableView.alpha=1.0;
+//    [self removePeripheral:peripheral];
+//    [doorsTableView reloadData];
+//    
+//    [self startLookingForDoors];
+//    
+//}
+
+- (void)refreshBLEInfo
 {
-    [self addDeviceIfNotYet:peripheralDevice];
-    //refresh tableview
+    if (shouldRefresh&&self.bleManager.intrestedBLEPeripherals.count)
+    {
+        [doorsTableView reloadData];
+    }
+    
+    [self performSelector:@selector(refreshBLEInfo) withObject:nil afterDelay:2.0];
 }
 
+
+- (void)OKBLEManager:(OKBLEManager*)manager startedMonitoringPeripheral:(CBPeripheral*)peripheral
+{
+    [doorsTableView reloadData];
+}
+
+- (void)OKBLEManager:(OKBLEManager *)manager stoppedMonitoringPeripheral:(CBPeripheral*)peripheral
+{
+    [doorsTableView reloadData];
+}
+
+- (void)OKBLEManager:(OKBLEManager *)manager didOpenDoorForPeripheral:(CBPeripheral*)peripheral
+{
+    doorsTableView.userInteractionEnabled=YES;
+    doorsTableView.alpha=1.0;
+    
+    [doorsTableView reloadData];
+}
 #pragma mark End-
 
 @end

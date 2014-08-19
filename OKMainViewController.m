@@ -8,12 +8,18 @@
 
 #import "OKMainViewController.h"
 #import "OKUtility.h"
+#import "OKUser.h"
+#import "AsyncImageView.h"
+#import "OKBLEManager.h"
+
 
 #define WELCOME_TAG 110
 #define SETTINGS_TAG 111
 #define DOORS_TAG 112
 #define BADGE_TAG 113
 #define CONFIRM_LOGOUT 114
+
+extern NSString *LOGGED_IN_KEY;
 
 @interface OKMainViewController ()
 
@@ -22,6 +28,7 @@
 @end
 
 @implementation OKMainViewController
+
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
@@ -41,6 +48,16 @@
     [logoutButton setEnabled:YES];
 }
 
+
+- (void)logout
+{
+    UIStoryboard *mainBoard=[UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    id mainScreen=[mainBoard instantiateViewControllerWithIdentifier:@"Login"];
+    NSArray *controllers=[NSArray arrayWithObject:mainScreen];
+    [self.navigationController setViewControllers:controllers animated:YES];
+    [OKUser logoutUser];
+}
+
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
 
 {
@@ -48,7 +65,7 @@
     {
         if (buttonIndex!=alertView.cancelButtonIndex)
         {
-            [self.navigationController dismissViewControllerAnimated:YES completion:nil];
+            [self logout];
         }
     }
 }
@@ -56,6 +73,15 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    OKBLEManager *manager=[OKBLEManager sharedManager];
+    [manager startScanForDoors];
+    
+    OKUser *user=[OKUser sharedUser];
+    nameLabel.text=[[user fName] stringByAppendingFormat:@" %@",[user lName] ];
+    titleLabel.text=[user titleString];
+    [self.profileImageView setImageURL:[NSURL URLWithString:user.potraitURLString]];
+    
     self.view.backgroundColor=[OKUtility colorFromHexString:@"16719E"];
     
     self.navigationItem.titleView=[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"titleImage.png"]];
@@ -124,7 +150,8 @@
         
         self.containerViewController.view.backgroundColor=[self.containerViewController currentViewControllerBackGroundColor];
         
-        [UIView animateWithDuration:0.25 animations:^{
+        [UIView animateWithDuration:0.25 animations:^
+        {
             self.btnsView.center=CGPointMake(self.btnsView.center.x, self.btnsView.center.y-yDx);
             [self.containerView setFrame:newRect];
             
@@ -147,12 +174,14 @@
         oldRect.size.height-=yDx;
         CGRect newRect=oldRect;
         
-        [UIView animateWithDuration:0.25 animations:^{
+        [UIView animateWithDuration:0.25 animations:^
+        {
             self.btnsView.center=CGPointMake(self.btnsView.center.x, self.btnsView.center.y+yDx);
             [self.containerView setFrame:newRect];
             self.profileInfoView.alpha=1.0;
             
-        } completion:^(BOOL finished) {
+        } completion:^(BOOL finished)
+        {
             
             
             [self.containerViewController loadViewAtIndex:(int)(self.selectedButtonTag-WELCOME_TAG)];
@@ -200,10 +229,6 @@
         }
         
     }
-    
-    
-    
-    
     
 }
 

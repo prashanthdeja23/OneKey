@@ -8,6 +8,9 @@
 
 #import "OKAppDelegate.h"
 #import "OKUtility.h"
+#import "OKBLEManager.h"
+#import "OKUser.h"
+
 @implementation OKAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
@@ -16,6 +19,7 @@
     sleep(2.0);
     [[UINavigationBar appearance] setBarTintColor:[OKUtility colorFromHexString:@"35B5D8"]];
     [[UINavigationBar appearance] setTintColor:[OKUtility colorFromHexString:@"1B96C1"]];
+    
     return YES;
 }
 							
@@ -44,6 +48,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application
 {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    NSLog(@"Did Terminate app");
 }
 
 @end

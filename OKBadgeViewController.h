@@ -7,11 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "AsyncImageView.h"
 @interface OKBadgeViewController : UIViewController
 {
     IBOutlet UIButton               *allAccessButton;
+    IBOutlet UILabel                *nameLabel;
+    IBOutlet UILabel                *titleLabel;
+    
 }
-@property (nonatomic,strong) IBOutlet UIImageView              *profileImageView;
+@property (nonatomic,strong) IBOutlet    AsyncImageView         *profileImageView;
 
 @end

@@ -8,6 +8,7 @@
 
 #import "OKBadgeViewController.h"
 #import "OKUtility.h"
+#import "OKUser.h"
 
 @interface OKBadgeViewController ()
 
@@ -27,6 +28,11 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    OKUser *user=[OKUser sharedUser];
+    nameLabel.text=[user.fName  stringByAppendingFormat:@" %@",user.lName];
+    titleLabel.text=[user titleString];
+    [self.profileImageView setImageURL:[NSURL URLWithString:user.potraitURLString]];
+    
     // Do any additional setup after loading the view.
     [self.profileImageView roundWithCornerRadius:self.profileImageView.bounds.size.width/2.0];
     [self.profileImageView addBorderWithColor:[OKUtility colorFromHexString:@"2CA4CE"] andWidth:12];

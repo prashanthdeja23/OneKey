@@ -7,17 +7,16 @@
 //
 
 #import "OKViewController.h"
-#import "OKBeaconManager.h"
-#import <CoreBluetooth/CoreBluetooth.h>
-#import "OKBLEManager.h"
+#import "OKUser.h"
+#import "OKMainViewController.h"
+#import "OKLoginViewController.h"
+
+
 
 @interface OKViewController ()
 {
-    IBOutlet UILabel    *proximityInfoLabel;
 }
 
-@property (nonatomic,strong) CLLocationManager  *locationManager;
-@property (nonatomic,strong)OKBLEManager *manager;
 @end
 
 @implementation OKViewController
@@ -26,11 +25,16 @@
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
-    self.locationManager=[[CLLocationManager alloc]init];
-    self.locationManager.delegate=self;
-    
-    _manager=[OKBLEManager sharedManager];
-    _manager.delegate=self;
+
+    if ([OKUser isLoggedIn])
+    {
+        [OKUser resumeSession];
+        [self showMainScreen];
+    }
+    else
+    {
+        [self showLoginScreen];
+    }
     
 }
 
@@ -51,50 +55,24 @@
     
 }
 
-- (void)OKBLManager:(OKBLEManager*)manager didConnectToPeripheral:(CBPeripheral*)peripheralDevice
+- (void)showLoginScreen
 {
-    proximityInfoLabel.text=peripheralDevice.name;
+    UIStoryboard *mainBoard=[UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    id mainScreen=[mainBoard instantiateViewControllerWithIdentifier:@"Login"];
+    NSArray *uivewControllers=[NSArray arrayWithObject:mainScreen];
+    [self.navigationController setViewControllers:uivewControllers];
 }
 
-//- (void)centralManagerDidUpdateState:(CBCentralManager *)central
-//{
-//    [central scanForPeripheralsWithServices:nil options:nil];
-//}
+- (void)showMainScreen
+{
+    UIStoryboard *mainBoard=[UIStoryboard storyboardWithName:@"Main" bundle:nil];
+    id mainScreen=[mainBoard instantiateViewControllerWithIdentifier:@"MainVC"];
+    NSArray *uivewControllers=[NSArray arrayWithObject:mainScreen];
+    [self.navigationController setViewControllers:uivewControllers];
+    
+   // [self.navigationController presentViewController:navController animated:YES completion:nil];
+}
 
-//- (void)centralManager:(CBCentralManager *)central
-// didDiscoverPeripheral:(CBPeripheral *)peripheral
-//     advertisementData:(NSDictionary *)advertisementData
-//                  RSSI:(NSNumber *)RSSI
-//{
-//    
-//    NSLog(@"Discovered %@", peripheral.name);
-//    proximityInfoLabel.text=[NSString stringWithFormat:@"%@:%@",peripheral.name,RSSI];
-//    
-//}
 
-//- (void)locationManager:(CLLocationManager *)manager didRangeBeacons:(NSArray *)beacons inRegion:(CLBeaconRegion *)region
-//{
-//    /*
-//     CoreLocation will call this delegate method at 1 Hz with updated range information.
-//     Beacons will be categorized and displayed by proximity.  A beacon can belong to multiple
-//     regions.  It will be displayed multiple times if that is the case.  If that is not desired,
-//     use a set instead of an array.
-//     */
-//    for (CLBeacon *aBeacon in beacons)
-//    {
-//        if (aBeacon.proximity == CLProximityImmediate)
-//        {
-//            // Open the Door if you have permission.
-//            proximityInfoLabel.text=@"Do you want to open the door?";
-//            proximityInfoLabel.textColor=[UIColor greenColor];
-//        }
-//        else
-//        {
-//            // Your are not close enough.
-//            proximityInfoLabel.text=@"No doors in range";
-//            proximityInfoLabel.textColor=[UIColor redColor];
-//        }
-//    }
-//}
 
 @end

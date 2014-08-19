@@ -8,6 +8,8 @@
 
 #import "OKLoginViewController.h"
 #import "OKUtility.h"
+#import "OKUser.h"
+#import "OKBLEManager.h"
 
 @interface OKLoginViewController ()
 {
@@ -55,8 +57,11 @@
 
     usernameLabel.textColor=passLabel.textColor=[OKUtility colorFromHexString:@"148AB2"];
     
+    
     // Do any additional setup after loading the view.
 }
+
+
 
 -(void)viewWillAppear:(BOOL)animated
 {
@@ -104,7 +109,8 @@
     float displacement=140;
     if (toTop)
     {
-        [UIView animateWithDuration:0.25 animations:^{
+        [UIView animateWithDuration:0.25 animations:^
+        {
             
         } ];
         [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
@@ -145,28 +151,87 @@
     [userNameField resignFirstResponder];
     [passwordField resignFirstResponder];
     
-    if ([self isValidLogin])
+    [self callLoginService];
+}
+
+
+- (void)callLoginService
+{
+    NSString *userId=[userNameField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *pass=[passwordField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *server=[serverField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    if (userId.length && pass.length && server.length)
     {
-        [self showLoginFailed:NO];
-        [self pushMainScreen];
+        self.view.userInteractionEnabled=NO;
+        self.view.alpha=0.7;
+        [actIndicator startAnimating];
+        NSString *urlString=[NSString stringWithFormat:@"http://%@",serverField.text];
+        
+        NSDictionary *dictionaryForParams=[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:userId,pass, nil] forKeys:[NSArray arrayWithObjects:@"userId",@"password", nil] ];
+        
+        urlString=[urlString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding];
+        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+        AFHTTPResponseSerializer *reponseSerializer=[AFHTTPResponseSerializer serializer];
+        reponseSerializer.acceptableContentTypes=[NSSet setWithObject:@"text/html"];
+        
+        manager.responseSerializer=reponseSerializer;
+        
+        [manager POST:urlString parameters:dictionaryForParams success:^(AFHTTPRequestOperation *operation, id responseObject)
+        {
+            NSString *userInfo=operation.responseString;
+            
+            if (userInfo!=nil && ![userInfo isEqualToString:@"invalid"])
+            {
+                [OKUser didLoginWithUserInfo:userInfo];
+                [self performSelector:@selector(pushMainScreen) withObject:nil afterDelay:0.3];
+            }
+            else
+            {
+                // Invalid login ..
+                [self showLoginFailed:YES];
+            }
+            self.view.userInteractionEnabled=YES;
+            self.view.alpha=1.0;
+            [actIndicator stopAnimating];
+        }
+        failure:^(AFHTTPRequestOperation *operation, NSError *error)
+        {
+            
+            // Error ..
+        }];
+        
+//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+//            
+//            NSString *userInfo=[NSString stringWithContentsOfURL:[NSURL URLWithString:urlString] encoding:NSASCIIStringEncoding error:NULL];
+//            
+//            dispatch_async(dispatch_get_main_queue(), ^
+//            {
+//                
+//                
+//                
+//            });
+//            
+//        });
+        
     }
     else
     {
+        // Show toast for invalid user name and pass.
         [self showLoginFailed:YES];
     }
+    
 }
 
 #pragma mark - textFieldDelegate methods
 
 - (BOOL)textFieldShouldBeginEditing:(UITextField *)textField
 {
-    
     return YES;
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField
 {
-    
     if ([self isValidLogin])
     {
         [textField resignFirstResponder];
@@ -180,6 +245,7 @@
     
     return NO;
 }
+
 #pragma mark end -
 
 

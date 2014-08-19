@@ -13,8 +13,10 @@
 #define SLIDER_SENSITIVITY_TAG 111
 #define SLIDER_KNOCKS_TAG 112
 
-#define OPEN_UNLOCKED @"ANYTIME"
-#define DISABLE_APP @"ENABLE"
+NSString * OPEN_UNLOCKED = @"ANYTIME";
+NSString * DISABLE_APP = @"ENABLE";
+NSString * SLIDER_SENSITIVITY = @"slider111";
+NSString * SLIDER_KNOCKS = @"slider112";
 
 @interface OKSettingsViewController ()
 {
@@ -24,7 +26,7 @@
     IBOutlet UILabel        *knocksLable;
 }
 
-
+@property (nonatomic)OKUser *user;
 
 @end
 
@@ -43,6 +45,8 @@
 {
     [super viewDidLoad];
     
+    self.user=[OKUser sharedUser];
+    [self.user reloadSettings];
     
     self.view.backgroundColor = [OKUtility colorFromHexString:@"2CA4CE"];
     
@@ -55,14 +59,13 @@
     sensitivitySlider.tag=SLIDER_SENSITIVITY_TAG;
     knocksSlider.tag=SLIDER_KNOCKS_TAG;
     
-    NSInteger sensitivity=[[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"slider%d",SLIDER_SENSITIVITY_TAG]];
-    NSInteger knocks=[[NSUserDefaults standardUserDefaults] integerForKey:[NSString stringWithFormat:@"slider%d",SLIDER_KNOCKS_TAG]];
+    NSInteger sensitivity=self.user.sensitivity;
+    NSInteger knocks=self.user.requiredKnocksCount;
     
     sensitivitySlider.value=sensitivity;
     knocksSlider.value=knocks;
     
-    BOOL disable=[[NSUserDefaults standardUserDefaults] boolForKey:DISABLE_APP];
-    if (!disable)
+    if (!self.user.isAppDisabled)
     {
         enableAppButton.selected=YES;
         disableAppButton.selected=NO;
@@ -73,8 +76,7 @@
         disableAppButton.selected=YES;
     }
     
-    BOOL openUnlocked=[[NSUserDefaults standardUserDefaults] boolForKey:OPEN_UNLOCKED];
-    if (!openUnlocked)
+    if (!self.user.requiredKnocksCount)
     {
         openAnyTimeButton.selected=YES;
         openWhenUnlockedButton.selected=NO;

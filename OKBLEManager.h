@@ -8,12 +8,17 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreBluetooth/CoreBluetooth.h>
+#import "OKMotionManager.h"
 
 @class OKBLEManager;
 
 @protocol OKBLManagerDelegate <NSObject>
-- (void)OKBLManager:(OKBLEManager*)manager didConnectToPeripheral:(CBPeripheral*)peripheralDevice;
-- (void)OKBLManager:(OKBLEManager*)manager DidDiscoverDevice:(CBPeripheral*)peripheralDevice adData:(NSDictionary*)adData andRssi:(NSNumber*)rssi;
+
+// UI Related
+- (void)OKBLEManager:(OKBLEManager*)manager startedMonitoringPeripheral:(CBPeripheral*)peripheral;
+- (void)OKBLEManager:(OKBLEManager *)manager stoppedMonitoringPeripheral:(CBPeripheral*)peripheral;
+- (void)OKBLEManager:(OKBLEManager *)manager didOpenDoorForPeripheral:(CBPeripheral*)peripheral;
+
 @end
 
 enum BLEConnectionState
@@ -25,15 +30,23 @@ enum BLEConnectionState
     BLEConnectionStateConnected
 };
 
-@interface OKBLEManager : NSObject <CBCentralManagerDelegate,CBPeripheralDelegate>
+@interface OKBLEManager : NSObject <CBCentralManagerDelegate,CBPeripheralDelegate,OKMotionManagerDelegate>
 
 @property (nonatomic)BOOL   isConnectedForBLE;
 @property (nonatomic,weak) __weak id <OKBLManagerDelegate> delegate;
 @property (nonatomic)enum BLEConnectionState connectionState;
+@property (nonatomic) NSMutableArray            *intrestedBLEPeripherals;
 
 + (OKBLEManager *)sharedManager;
 
 - (void)connectToPeripheral:(CBPeripheral*)peripheral;
-- (void)startScanForPeripheralWithServiceIds:(NSArray*)serviceIds;
+- (void)startScanForDoors;
+- (void)peripheral:(CBPeripheral*)peripheral writeToCharacterstic:(NSString*)charactersticUUID forServiceID:(NSString*)serviceID data:(NSData*)data;
+- (NSData*)getDataToWrite;
+- (void)disconnectPeripheral:(CBPeripheral*)peripheral;
+- (void)stopDiscovery;
+- (void)peripheralReadRssiValue:(CBPeripheral*)peripheral;
+
+- (void)openDoorAtIndex:(int)index;
 
 @end

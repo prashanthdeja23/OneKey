@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "OKUser.h"
 
 @interface OKSettingsViewController : UIViewController
 {
@@ -15,6 +16,8 @@
     
     IBOutlet UIButton *enableAppButton;
     IBOutlet UIButton *disableAppButton;
+    
+    
 }
 
 - (IBAction)sliderValueChanged:(UISlider*)slider;

@@ -10,7 +10,8 @@
 #import "OKContainerViewController.h"
 @interface OKMainViewController : UIViewController
 {
-   
+    IBOutlet UILabel                 *nameLabel;
+    IBOutlet UILabel                 *titleLabel;
     
 }
 - (IBAction)clickedOptionsButton:(UIButton*)btn;
