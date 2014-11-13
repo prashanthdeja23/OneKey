@@ -114,23 +114,33 @@
 
 -(void)scrollViewToTop:(BOOL)toTop
 {
-    float displacement=140;
+    float displacement=self.view.bounds.size.height/3;
     if (toTop)
     {
-        [UIView animateWithDuration:0.25 animations:^
+        if (!self.isKeyBoardUp)
         {
-            
-        } ];
+        [UIView animateWithDuration:0.25 animations:^
+         {
+             
+         } ];
         [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
             self.view.center=CGPointMake(self.view.center.x, self.view.center.y-displacement);
         } completion:nil];
+        self.isKeyBoardUp=YES;
+        }
+        
     }
     else
     {
+        if (self.isKeyBoardUp)
+        {
+            self.isKeyBoardUp=NO;
+            
+            [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+                self.view.center=CGPointMake(self.view.center.x, self.view.center.y+displacement);
+            } completion:nil];
+        }
         
-        [UIView animateWithDuration:0.25 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            self.view.center=CGPointMake(self.view.center.x, self.view.center.y+displacement);
-        } completion:nil];
     }
 }
 
