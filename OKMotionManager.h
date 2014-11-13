@@ -9,6 +9,8 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import <CoreMotion/CoreMotion.h>
+#import "OKAVManager.h"
+#import "OKUser.h"
 
 @class OKMotionManager;
 
@@ -21,12 +23,15 @@
 @property (nonatomic,strong) CLLocationManager *locationManager;
 @property (nonatomic,strong) CMMotionManager    *motionManager;
 @property (nonatomic,weak) __weak   id<OKMotionManagerDelegate> delegate;
-@property (nonatomic) int           knockCounts;
-@property (nonatomic) int           requiredKnockCounts;
-@property (nonatomic,strong) NSDate        *lastKnockTime;
+@property (nonatomic) int                       knockCounts;
+@property (nonatomic) int                       requiredKnockCounts;
+@property (nonatomic,strong)NSDate             *lastKnockTime;
+@property (nonatomic)NSTimeInterval              lastUpdateTimeStamp;
+
 
 - (void)startMotionUpdates;
 - (void)stopMotionUpdates;
 + (OKMotionManager*)sharedManager;
++ (void)vibratePhone;
 
 @end

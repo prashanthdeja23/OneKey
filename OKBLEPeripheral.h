@@ -17,9 +17,16 @@
 - (void)insertRssi:(NSNumber*)num;                  // This obj will store 50 last rssi objects and provides the Avg value to client
 - (NSNumber*)avgRssi;
 
-@property (nonatomic,strong) CBPeripheral            *peripheral;
+@property (nonatomic,strong) CBPeripheral             *cbPeripheral;
 @property (nonatomic,strong) NSLock                     *rssiArrayLock;
+@property (nonatomic,strong) NSDate                      *lastOpenedDate;
+@property (nonatomic) BOOL                                isOpening;
+
 
 - (OKBLEPeripheral*)initWithPeripheral:(CBPeripheral*)peripheralObj;
++ (NSString*)getServerIpForPeripheral:(CBPeripheral*)peripheralObj;
++ (int)getRssiThresholdForPeripheral:(CBPeripheral*)peripheral;
+- (int)getMinRssiForSensitivity:(int)sensititvity;
+- (float)timeSinceLastOpen;
 
 @end

@@ -10,6 +10,11 @@
 #import "OKUtility.h"
 #import "OKUser.h"
 #import "OKBLEManager.h"
+#import "OKBLEPeripheral.h"
+
+#define CERT_ID "CA CERT"
+#define KEY_STORED @"KEY_STORED"
+#define CERT_FILE_NAME @"certificate.cer"
 
 @interface OKLoginViewController ()
 {
@@ -18,6 +23,7 @@
 }
 
 @property (nonatomic)BOOL isKeyBoardUp;
+
 @end
 
 @implementation OKLoginViewController
@@ -52,11 +58,15 @@
 -(void)viewDidLoad
 {
     [super viewDidLoad];
+    
+    NSLog(@"ip address = %@",[OKBLEPeripheral getServerIpForPeripheral:nil]);
+    
     self.navigationItem.titleView=[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"titleImage.png"]];
     self.view.backgroundColor=[OKUtility colorFromHexString:@"A7EAFC"];
 
     usernameLabel.textColor=passLabel.textColor=[OKUtility colorFromHexString:@"148AB2"];
     
+    [self getCert];
     
     // Do any additional setup after loading the view.
 }
@@ -101,8 +111,6 @@
     // Pass the selected object to the new view controller.
 }
 */
-
-
 
 -(void)scrollViewToTop:(BOOL)toTop
 {
@@ -166,16 +174,25 @@
         self.view.userInteractionEnabled=NO;
         self.view.alpha=0.7;
         [actIndicator startAnimating];
-        NSString *urlString=[NSString stringWithFormat:@"http://%@",serverField.text];
         
+        NSString *urlString=[NSString stringWithFormat:@"%@:2061/?op=auth",server];
         NSDictionary *dictionaryForParams=[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:userId,pass, nil] forKeys:[NSArray arrayWithObjects:@"userId",@"password", nil] ];
         
         urlString=[urlString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding];
+        
         AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
         AFHTTPResponseSerializer *reponseSerializer=[AFHTTPResponseSerializer serializer];
         reponseSerializer.acceptableContentTypes=[NSSet setWithObject:@"text/html"];
         
+        
         manager.responseSerializer=reponseSerializer;
+        
+        AFSecurityPolicy *secPolicy =[AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];
+        
+        secPolicy.validatesDomainName=NO;
+        secPolicy.allowInvalidCertificates=YES;
+        manager.securityPolicy=secPolicy;
+        
         
         [manager POST:urlString parameters:dictionaryForParams success:^(AFHTTPRequestOperation *operation, id responseObject)
         {
@@ -199,21 +216,10 @@
         {
             
             // Error ..
+            self.view.userInteractionEnabled=YES;
+            self.view.alpha=1.0;
+            [actIndicator stopAnimating];
         }];
-        
-//        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-//            
-//            NSString *userInfo=[NSString stringWithContentsOfURL:[NSURL URLWithString:urlString] encoding:NSASCIIStringEncoding error:NULL];
-//            
-//            dispatch_async(dispatch_get_main_queue(), ^
-//            {
-//                
-//                
-//                
-//            });
-//            
-//        });
-        
     }
     else
     {
@@ -248,5 +254,160 @@
 
 #pragma mark end -
 
+- (void)getCert
+{
+    BOOL certStored=[[NSUserDefaults standardUserDefaults] boolForKey:KEY_STORED];
+    if (!certStored)
+    {
+        //https://10.1.25.222:2061
+        NSString *server=[serverField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSString *getCertURLString = [NSString stringWithFormat:@"%@:2061/?op=getCA",server];
+        
+        AFHTTPRequestOperationManager *manager = [AFHTTPRequestOperationManager manager];
+        AFHTTPResponseSerializer *reponseSerializer=[AFHTTPResponseSerializer serializer];
+        reponseSerializer.acceptableContentTypes=[NSSet setWithObject:@"text/html"];
+        
+        manager.responseSerializer=reponseSerializer;
+        AFSecurityPolicy *secPolicy =[AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];
+        secPolicy.pinnedCertificates=nil;
+        secPolicy.allowInvalidCertificates=YES;
+        manager.securityPolicy=secPolicy;
+        
+        [manager GET:[getCertURLString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding] parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
+         {
+             NSLog(@"reponse string %@",operation.responseString);
+             if ([operation.responseString rangeOfString:@"END CERTIFICATE"].location != NSNotFound )
+             {
+                 [self installRootCA:[operation.responseData base64EncodedDataWithOptions:NSDataBase64EncodingEndLineWithCarriageReturn]];
+             }
+             
+         } failure:^(AFHTTPRequestOperation *operation, NSError *error)
+         {
+             NSLog(@"Failure %@",error);
+         }];
+    }
+}
+
+- (void)installRootCA:(NSData*)rootCertData
+{
+    
+    OSStatus err = noErr;
+    SecCertificateRef rootCert = SecCertificateCreateWithData(kCFAllocatorDefault, (__bridge CFDataRef) rootCertData);
+    
+    CFTypeRef result;
+    
+    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
+                          (__bridge id)kSecClassCertificate, kSecClass,
+                          rootCert, kSecValueRef,
+                          CERT_ID,kSecAttrLabel,
+                          nil];
+    
+    err = SecItemAdd((__bridge CFDictionaryRef)dict, &result);
+    
+    [[NSUserDefaults standardUserDefaults] setObject:rootCertData forKey:@"CertData"];
+    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:KEY_STORED];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    
+    if( err == noErr)
+    {
+        NSLog(@"Install root certificate success");
+        
+    }
+    else if( err == errSecDuplicateItem )
+    {
+        NSLog(@"duplicate root certificate entry");
+    }
+    else
+    {
+        NSLog(@"install root certificate failure");
+    }
+
+}
+
+- (NSData*)certForId:(NSString*)certId
+{
+//    OSStatus status = errSecSuccess;
+//    CFTypeRef   certificateRef     = NULL;
+//    // 1
+//    const char *certLabelString = CERT_ID;
+//    CFStringRef certLabel = CFStringCreateWithCString(
+//                                                      NULL, certLabelString,
+//                                                      kCFStringEncodingUTF8);         // 2
+//    
+//    const void *keys[] =   { kSecClass, kSecAttrLabel, kSecReturnData };
+//    const void *values[] = { kSecClassCertificate, certLabel, kCFBooleanTrue };
+//    CFDictionaryRef dict = CFDictionaryCreate(NULL, keys,
+//                                              values, 3,
+//                                              NULL, NULL);       // 3
+//    status = SecItemCopyMatching(dict, &certificateRef);        // 4
+//    
+//    if (status == errSecSuccess)
+//    {
+//        CFRelease(certificateRef);
+//        certificateRef = NULL;
+//    }
+//    
+//    /* Do something with certificateRef here */
+//    
+//    return (__bridge NSData*)certificateRef;
+
+    //NSString* certPath = [[NSBundle mainBundle] pathForResource:@"cert" ofType:@"der"];
+    
+    
+    
+    NSData* certData = [NSData dataWithContentsOfURL:[[NSBundle bundleForClass:[self class]] URLForResource:@"cert" withExtension:@"cer"]];
+    
+    return certData;
+}
+
+//OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
+//                                 SecIdentityRef *outIdentity,
+//                                 SecTrustRef *outTrust,
+//                                 CFStringRef keyPassword)
+//{
+//    OSStatus securityError = errSecSuccess;
+//    
+//    
+//    const void *keys[] =   { kSecImportExportPassphrase };
+//    const void *values[] = { keyPassword };
+//    CFDictionaryRef optionsDictionary = NULL;
+//    
+//    /* Create a dictionary containing the passphrase if one
+//     was specified.  Otherwise, create an empty dictionary. */
+//    optionsDictionary = CFDictionaryCreate(
+//                                           NULL, keys,
+//                                           values, (keyPassword ? 1 : 0),
+//                                           NULL, NULL);  // 1
+//    
+//    CFArrayRef items = NULL;
+//    securityError = SecPKCS12Import(inPKCS12Data,
+//                                    optionsDictionary,
+//                                    &items);                    // 2
+//    
+//    
+//    //
+//    if (securityError == 0) {                                   // 3
+//        CFDictionaryRef myIdentityAndTrust = CFArrayGetValueAtIndex (items, 0);
+//        const void *tempIdentity = NULL;
+//        tempIdentity = CFDictionaryGetValue (myIdentityAndTrust,
+//                                             kSecImportItemIdentity);
+//        CFRetain(tempIdentity);
+//        *outIdentity = (SecIdentityRef)tempIdentity;
+//        const void *tempTrust = NULL;
+//        tempTrust = CFDictionaryGetValue (myIdentityAndTrust, kSecImportItemTrust);
+//        
+//        CFRetain(tempTrust);
+//        *outTrust = (SecTrustRef)tempTrust;
+//    }
+//    
+//    if (optionsDictionary)                                      // 4
+//        CFRelease(optionsDictionary);
+//    
+//    if (items)
+//        CFRelease(items);
+//    
+//    return securityError;
+//}
 
 @end

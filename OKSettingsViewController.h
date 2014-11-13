@@ -16,12 +16,19 @@
     
     IBOutlet UIButton *enableAppButton;
     IBOutlet UIButton *disableAppButton;
-    
+    IBOutlet UIButton *opModeButton;
     
 }
+
+@property (nonatomic,strong) IBOutlet UIButton *proxButton;
+@property (nonatomic,strong) IBOutlet UIButton *proxKnockButton;
+@property (nonatomic,strong) IBOutlet UIButton *knockButton;
+
 
 - (IBAction)sliderValueChanged:(UISlider*)slider;
 - (IBAction)openDoorButtonClicked:(UIButton*)btn;
 - (IBAction)enableAppButtonClicked:(UIButton*)btn;
+- (IBAction)selectOpModeClicked:(UIButton*)sender;
+- (UIImage*)backgroundImageForOpMode:(enum BLEOperationMode)opMode;
 
 @end

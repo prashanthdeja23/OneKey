@@ -24,5 +24,4 @@
 
 - (IBAction)badgeImageClicked:(UIButton*)btn;
 
-
 @end

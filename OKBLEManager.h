@@ -18,6 +18,7 @@
 - (void)OKBLEManager:(OKBLEManager*)manager startedMonitoringPeripheral:(CBPeripheral*)peripheral;
 - (void)OKBLEManager:(OKBLEManager *)manager stoppedMonitoringPeripheral:(CBPeripheral*)peripheral;
 - (void)OKBLEManager:(OKBLEManager *)manager didOpenDoorForPeripheral:(CBPeripheral*)peripheral;
+- (void)OKBLEManager:(OKBLEManager *)manager didFailToOpenWithError:(NSError*)error;
 
 @end
 
@@ -30,15 +31,23 @@ enum BLEConnectionState
     BLEConnectionStateConnected
 };
 
+enum BLEDoorOpenError
+{
+    BLEDoorOpenErrorTooFar=100,
+    BLEDoorOpenErrorUnableToConnect,
+    BLEDoorOpenErrorRssiReadError,
+    BLEDoorOpenErrorNoDoorInRange
+};
+
 @interface OKBLEManager : NSObject <CBCentralManagerDelegate,CBPeripheralDelegate,OKMotionManagerDelegate>
 
 @property (nonatomic)BOOL   isConnectedForBLE;
 @property (nonatomic,weak) __weak id <OKBLManagerDelegate> delegate;
 @property (nonatomic)enum BLEConnectionState connectionState;
 @property (nonatomic) NSMutableArray            *intrestedBLEPeripherals;
+@property (nonatomic)BOOL useHttp;
 
 + (OKBLEManager *)sharedManager;
-
 - (void)connectToPeripheral:(CBPeripheral*)peripheral;
 - (void)startScanForDoors;
 - (void)peripheral:(CBPeripheral*)peripheral writeToCharacterstic:(NSString*)charactersticUUID forServiceID:(NSString*)serviceID data:(NSData*)data;
@@ -46,7 +55,7 @@ enum BLEConnectionState
 - (void)disconnectPeripheral:(CBPeripheral*)peripheral;
 - (void)stopDiscovery;
 - (void)peripheralReadRssiValue:(CBPeripheral*)peripheral;
-
 - (void)openDoorAtIndex:(int)index;
+- (void)disableBLE;
 
 @end

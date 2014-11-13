@@ -74,6 +74,7 @@
     
     self.bleManager=[OKBLEManager sharedManager];
     self.bleManager.delegate=self;
+    self.bleManager.useHttp=YES;
     
     OKMotionManager *motionManager=[OKMotionManager sharedManager];
     [motionManager startMotionUpdates];
@@ -112,9 +113,9 @@
 - (NSDictionary *)dictionaryForPeripheral:(OKBLEPeripheral*)peripheralInfo
 {
     NSMutableDictionary *dict=[[NSMutableDictionary alloc] init];
-    [dict setObject:peripheralInfo.peripheral.name forKey:@"name"];
+    [dict setObject:peripheralInfo.cbPeripheral.name forKey:@"name"];
     [dict setObject:[peripheralInfo avgRssi] forKey:@"rssi"];
-    [dict setObject:[NSNumber numberWithInteger:peripheralInfo.peripheral.state] forKey:@"state"];
+    [dict setObject:[NSNumber numberWithInteger:peripheralInfo.cbPeripheral.state] forKey:@"state"];
     
     return dict;
 }
@@ -132,8 +133,6 @@
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     // Unlock Door;
-    tableView.userInteractionEnabled=NO;
-     doorsTableView.alpha=0.7;
     
     [self.bleManager openDoorAtIndex:(int)indexPath.row];
     
@@ -328,11 +327,9 @@
 
 - (void)OKBLEManager:(OKBLEManager *)manager didOpenDoorForPeripheral:(CBPeripheral*)peripheral
 {
-    doorsTableView.userInteractionEnabled=YES;
-    doorsTableView.alpha=1.0;
-    
     [doorsTableView reloadData];
 }
+
 #pragma mark End-
 
 @end

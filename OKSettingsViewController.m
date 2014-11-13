@@ -8,15 +8,21 @@
 
 #import "OKSettingsViewController.h"
 #import "OKUtility.h"
-
+#import "OKBLEManager.h"
 
 #define SLIDER_SENSITIVITY_TAG 111
 #define SLIDER_KNOCKS_TAG 112
+
+#define PROX_BUTTON 113
+#define KNOCK_BUTTON 114
+#define PROX_KNOCK_BUTTON 115
 
 NSString * OPEN_UNLOCKED = @"ANYTIME";
 NSString * DISABLE_APP = @"ENABLE";
 NSString * SLIDER_SENSITIVITY = @"slider111";
 NSString * SLIDER_KNOCKS = @"slider112";
+NSString * OPMODE_KEY = @"OPMODEKEY";
+
 
 @interface OKSettingsViewController ()
 {
@@ -27,6 +33,8 @@ NSString * SLIDER_KNOCKS = @"slider112";
 }
 
 @property (nonatomic)OKUser *user;
+@property (nonatomic)NSInteger selectedModeTag;
+
 
 @end
 
@@ -76,7 +84,7 @@ NSString * SLIDER_KNOCKS = @"slider112";
         disableAppButton.selected=YES;
     }
     
-    if (!self.user.requiredKnocksCount)
+    if (!self.user.requiresScreenUnlock)
     {
         openAnyTimeButton.selected=YES;
         openWhenUnlockedButton.selected=NO;
@@ -86,13 +94,47 @@ NSString * SLIDER_KNOCKS = @"slider112";
         openAnyTimeButton.selected=NO;
         openWhenUnlockedButton.selected=YES;
     }
+    
     // Do any additional setup after loading the view.
+    if ((self.user.opMode>=BLEOperationModeProx&&self.user.opMode<=BLEOperationModeProxKnock)||(self.user.opMode=114))
+    {
+        [self setOpMode:self.user.opMode];
+    }
+    
 }
 
+- (void)setOpMode:(int)mode
+{
+//   self.knockButton.selected = self.proxKnockButton.selected = self.proxButton.selected=NO;
+//    self.selectedModeTag=mode;
+//    UIButton *btn = (UIButton*)[self.view viewWithTag:mode];
+//    btn.selected=YES;
+
+    [opModeButton setBackgroundImage:[self backgroundImageForOpMode:mode] forState:UIControlStateNormal];
+    
+}
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+- (UIImage*)backgroundImageForOpMode:(enum BLEOperationMode)opMode
+{
+    NSString *baseImageName=@"proxKnock";
+    
+    if (opMode == BLEOperationModeKnock)
+    {
+        return [UIImage imageNamed:[baseImageName stringByAppendingString:@"1.png"]];
+    }
+    else if (opMode == BLEOperationModeProx)
+    {
+        return [UIImage imageNamed:[baseImageName stringByAppendingString:@"2.png"]];
+    }
+    else
+    {
+        return [UIImage imageNamed:[baseImageName stringByAppendingString:@"3.png"]];
+    }
 }
 
 /*
@@ -105,6 +147,7 @@ NSString * SLIDER_KNOCKS = @"slider112";
     // Pass the selected object to the new view controller.
 }
 */
+
 - (IBAction)openDoorButtonClicked:(UIButton*)btn
 {
     if (btn==openAnyTimeButton)
@@ -131,12 +174,16 @@ NSString * SLIDER_KNOCKS = @"slider112";
 
 - (IBAction)enableAppButtonClicked:(UIButton*)btn
 {
+    OKBLEManager *manager=[OKBLEManager sharedManager];
+    
     if (btn==enableAppButton)
     {
         if (!enableAppButton.selected)
         {
             enableAppButton.selected=YES;
             disableAppButton.selected=NO;
+            
+            [manager startScanForDoors];
         }
     }
     else
@@ -145,11 +192,15 @@ NSString * SLIDER_KNOCKS = @"slider112";
         {
             disableAppButton.selected=YES;
             enableAppButton.selected=NO;
+            
+            [manager disableBLE];
         }
     }
     
+
     [[NSUserDefaults standardUserDefaults] setBool:!enableAppButton.selected forKey:DISABLE_APP];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    [self.user reloadSettings];
 }
 
 - (IBAction)sliderValueChanged:(UISlider*)slider
@@ -164,6 +215,24 @@ NSString * SLIDER_KNOCKS = @"slider112";
     [slider setValue:(int)round(slider.value) animated:YES];
     
     [[NSUserDefaults standardUserDefaults] setInteger:(NSInteger)slider.value forKey:[NSString stringWithFormat:@"slider%d",(int)slider.tag]];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    [self.user reloadSettings];
+}
+
+- (IBAction)selectOpModeClicked:(UIButton*)sender
+{
+    if (self.user.opMode==BLEOperationModeProxKnock)
+    {
+        self.user.opMode=BLEOperationModeProx;
+    }
+    else
+    {
+        self.user.opMode++;
+    }
+    self.selectedModeTag=self.user.opMode;
+    [self setOpMode:self.user.opMode];
+    
+    [[NSUserDefaults standardUserDefaults] setInteger:self.user.opMode forKey:OPMODE_KEY];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 

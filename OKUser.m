@@ -13,6 +13,7 @@ extern NSString *DISABLE_APP;
 extern NSString *OPEN_UNLOCKED;
 extern NSString *SLIDER_SENSITIVITY;
 extern NSString *SLIDER_KNOCKS;
+extern NSString *OPMODE_KEY;
 
 NSString *LOGGED_IN_KEY = @"LoggedInKey";
 NSString *USER_INFO_KEY = @"UserInfoKey";
@@ -86,6 +87,16 @@ NSString *USER_INFO_KEY = @"UserInfoKey";
             {
                 self.potraitURLString=[str substringFromIndex:3];
             }
+            else if ([str hasPrefix:@"cp:"])
+            {
+                self.certpass=[str substringFromIndex:3];
+            }
+            else if ([str hasPrefix:@"cc:"])
+            {
+                
+                self.pk12Data=[[NSData alloc] initWithBase64EncodedString:[str substringFromIndex:3] options:NSDataBase64DecodingIgnoreUnknownCharacters];
+                
+            }
         }
     }
     
@@ -100,13 +111,17 @@ NSString *USER_INFO_KEY = @"UserInfoKey";
     int             bitSize = (int)length;
     
     int byteSize = (bitSize + 8 - 1) / 8;
+    
+    byteSize=1;
+    // hardcoded to check an issue.
+    
     NSMutableData *dataBytes= [[NSMutableData alloc] initWithLength:byteSize];
     
     Byte x=0;
     
     for (int i=0;i<bitSize;i++)
     {
-        int bytePosition=(i/8);
+        int bytePosition=0; //(i/8);
         [dataBytes getBytes:&x range:NSMakeRange(bytePosition,1)];
         if ([_idBitString characterAtIndex:i]-'0')
         {
@@ -125,13 +140,19 @@ NSString *USER_INFO_KEY = @"UserInfoKey";
 {
     self.isAppDisabled=[[NSUserDefaults standardUserDefaults] boolForKey:DISABLE_APP];
     self.requiresScreenUnlock=[[NSUserDefaults standardUserDefaults] boolForKey:OPEN_UNLOCKED];
-   _sensitivity = [[NSUserDefaults standardUserDefaults] integerForKey:SLIDER_SENSITIVITY];
-    _requiredKnocksCount = [[NSUserDefaults standardUserDefaults] integerForKey:SLIDER_KNOCKS];
+   _sensitivity = (int) [[NSUserDefaults standardUserDefaults] integerForKey:SLIDER_SENSITIVITY];
+    _requiredKnocksCount = (int)[[NSUserDefaults standardUserDefaults] integerForKey:SLIDER_KNOCKS];
+    _opMode = (int)[[NSUserDefaults standardUserDefaults] integerForKey:OPMODE_KEY];
+    if (!_opMode)
+    {
+        _opMode=BLEOperationModeKnock;
+    }
+    
 }
 
 - (float)minimumRssi
 {
-    return 65+((_sensitivity-2.0)*8);
+    return 65+((2-_sensitivity)*5);
 }
 
 @end

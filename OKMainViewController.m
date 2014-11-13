@@ -11,7 +11,7 @@
 #import "OKUser.h"
 #import "AsyncImageView.h"
 #import "OKBLEManager.h"
-
+#import <QuartzCore/QuartzCore.h>
 
 #define WELCOME_TAG 110
 #define SETTINGS_TAG 111
@@ -20,6 +20,7 @@
 #define CONFIRM_LOGOUT 114
 
 extern NSString *LOGGED_IN_KEY;
+extern NSString *DID_OPEN_DOOR_NOTIFICATION;
 
 @interface OKMainViewController ()
 
@@ -56,6 +57,9 @@ extern NSString *LOGGED_IN_KEY;
     NSArray *controllers=[NSArray arrayWithObject:mainScreen];
     [self.navigationController setViewControllers:controllers animated:YES];
     [OKUser logoutUser];
+    OKBLEManager *manager=[OKBLEManager sharedManager];
+    [manager stopDiscovery];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
@@ -74,10 +78,20 @@ extern NSString *LOGGED_IN_KEY;
 {
     [super viewDidLoad];
     
+    
     OKBLEManager *manager=[OKBLEManager sharedManager];
-    [manager startScanForDoors];
+    
     
     OKUser *user=[OKUser sharedUser];
+    if (!user.isAppDisabled)
+    {
+        [manager startScanForDoors];
+    }
+    else
+    {
+        [manager stopDiscovery];
+    }
+    
     nameLabel.text=[[user fName] stringByAppendingFormat:@" %@",[user lName] ];
     titleLabel.text=[user titleString];
     [self.profileImageView setImageURL:[NSURL URLWithString:user.potraitURLString]];
@@ -103,8 +117,11 @@ extern NSString *LOGGED_IN_KEY;
     [self.profileImageView roundWithCornerRadius:self.profileImageView.bounds.size.width/2.0];
     [self.profileImageView addBorderWithColor:[OKUtility colorFromHexString:@"2CA4CE"] andWidth:4];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showUnlockedMsg:) name:DID_OPEN_DOOR_NOTIFICATION object:nil];
     
     // Do any additional setup after loading the view.
+    
+    
 }
 
 - (void)didReceiveMemoryWarning
@@ -227,9 +244,49 @@ extern NSString *LOGGED_IN_KEY;
         {
             //DO Nothing.
         }
-        
+    }
+}
+
+- (void)showUnlockedMsg:(NSNotification*)notification
+{
+    NSDictionary *dict = [notification userInfo];
+    
+    
+    UIView *newView= [[UIView alloc] initWithFrame:CGRectMake(40, self.view.bounds.size.height-160, self.view.bounds.size.width-80, 50)];
+    newView.backgroundColor=[UIColor lightGrayColor];
+    
+    UILabel *unlockedLabel = [[UILabel alloc] initWithFrame:newView.bounds];
+    unlockedLabel.backgroundColor=[UIColor clearColor];
+    
+    NSString *nameStr=[NSString stringWithFormat:@"Unlocked %@",[dict objectForKey:@"peripheralName"]];
+    
+    if (nameStr.length==16)
+    {
+        unlockedLabel.text=[nameStr substringFromIndex:10];
+    }
+    else
+    {
+        unlockedLabel.text=nameStr;
     }
     
+    
+    unlockedLabel.font=[UIFont boldSystemFontOfSize:12];
+    unlockedLabel.textAlignment=NSTextAlignmentCenter;
+    newView.alpha=0.0;
+    [newView addSubview:unlockedLabel];
+    
+    newView.layer.cornerRadius=5.0;
+    newView.layer.masksToBounds=YES;
+    
+    [((UIViewController*)[self.navigationController.viewControllers lastObject]).view addSubview:newView];
+    
+    [UIView animateWithDuration:0.50 animations:^
+    {
+        newView.alpha=0.6;
+    } completion:^(BOOL finished)
+    {
+        [newView performSelector:@selector(removeFromSuperview) withObject:nil afterDelay:2.0];
+    }];
 }
 
 @end

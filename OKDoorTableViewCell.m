@@ -31,7 +31,7 @@
         
         btnUnlock=[UIButton buttonWithType:UIButtonTypeCustom];
         [btnUnlock setImage:[UIImage imageNamed:@"unlock.png"] forState:UIControlStateNormal];
-        
+        btnUnlock.userInteractionEnabled=NO;
         [self addSubview:btnUnlock];
         
     }
@@ -61,7 +61,17 @@
 - (void)display
 {
     doorDistance.text=[NSString stringWithFormat:@"%.0f",[[self.doorInfo objectForKey:@"rssi"] floatValue]];
-    doorName.text=[self.doorInfo objectForKey:@"name"];
+    NSString *nameStr=[self.doorInfo objectForKey:@"name"];
+    
+    if (nameStr.length==16)
+    {
+        doorName.text=[nameStr substringFromIndex:10];
+    }
+    else
+    {
+        doorName.text=nameStr;
+    }
+
     btnUnlock.hidden=NO;
 }
 
