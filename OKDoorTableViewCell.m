@@ -34,6 +34,7 @@
         btnUnlock.userInteractionEnabled=NO;
         [self addSubview:btnUnlock];
         
+        
     }
     return self;
 }
@@ -44,7 +45,10 @@
     
     doorName.frame=CGRectMake(20, 7, 180, 30);
     doorDistance.frame=CGRectMake(200, 7, 60, 30);
-    btnUnlock.frame=CGRectMake(270, 0, 40, 40);
+    btnUnlock.frame=CGRectMake(250, -5, 50, 60);
+    
+    btnUnlock.backgroundColor=[UIColor colorWithWhite:1.0 alpha:0.1];
+    
 }
 
 - (void)awakeFromNib
@@ -60,7 +64,7 @@
 
 - (void)display
 {
-    doorDistance.text=[NSString stringWithFormat:@"%.0f",[[self.doorInfo objectForKey:@"rssi"] floatValue]];
+    doorDistance.text=[NSString stringWithFormat:@"%.0f",-1*[[self.doorInfo objectForKey:@"rssi"] floatValue]];
     NSString *nameStr=[self.doorInfo objectForKey:@"name"];
     
     if (nameStr.length==16)

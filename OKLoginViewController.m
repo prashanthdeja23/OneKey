@@ -11,6 +11,7 @@
 #import "OKUser.h"
 #import "OKBLEManager.h"
 #import "OKBLEPeripheral.h"
+#import "AFNetworkReachabilityManager.h"
 
 #define CERT_ID "CA CERT"
 #define KEY_STORED @"KEY_STORED"
@@ -66,7 +67,16 @@
 
     usernameLabel.textColor=passLabel.textColor=[OKUtility colorFromHexString:@"148AB2"];
     
-    [self getCert];
+    if ([self isServerReachable])
+    {
+        [self getCert];
+    }
+    else
+    {
+        loginFailed.text=@"Server is not reachable. Please connect to the network.";
+        loginFailed.hidden=NO;
+    }
+    
     
     // Do any additional setup after loading the view.
 }
@@ -169,7 +179,16 @@
     [userNameField resignFirstResponder];
     [passwordField resignFirstResponder];
     
-    [self callLoginService];
+    if (![self isServerReachable])
+    {
+        [self callLoginService];
+        loginFailed.hidden=YES;
+    }
+    else
+    {
+        loginFailed.text=@"Server is not reachable. Please connect to the network.";
+        loginFailed.hidden=NO;
+    }
 }
 
 
@@ -285,15 +304,13 @@
         
         [manager GET:[getCertURLString stringByAddingPercentEscapesUsingEncoding:NSASCIIStringEncoding] parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject)
          {
-             NSLog(@"reponse string %@",operation.responseString);
-             if ([operation.responseString rangeOfString:@"END CERTIFICATE"].location != NSNotFound )
-             {
-                 [self installRootCA:[operation.responseData base64EncodedDataWithOptions:NSDataBase64EncodingEndLineWithCarriageReturn]];
-             }
+             [self installRootCA:[NSData dataWithContentsOfURL:[NSURL URLWithString:getCertURLString]]];
              
          } failure:^(AFHTTPRequestOperation *operation, NSError *error)
          {
-             NSLog(@"Failure %@",error);
+             loginFailed.text=@"Failed to get a valid certificate.";
+             [loginFailed setHidden:NO];
+             
          }];
     }
 }
@@ -301,37 +318,55 @@
 - (void)installRootCA:(NSData*)rootCertData
 {
     
-    OSStatus err = noErr;
-    SecCertificateRef rootCert = SecCertificateCreateWithData(kCFAllocatorDefault, (__bridge CFDataRef) rootCertData);
-    
-    CFTypeRef result;
-    
-    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
-                          (__bridge id)kSecClassCertificate, kSecClass,
-                          rootCert, kSecValueRef,
-                          CERT_ID,kSecAttrLabel,
-                          nil];
-    
-    err = SecItemAdd((__bridge CFDictionaryRef)dict, &result);
-    
-    [[NSUserDefaults standardUserDefaults] setObject:rootCertData forKey:@"CertData"];
-    [[NSUserDefaults standardUserDefaults] setBool:YES forKey:KEY_STORED];
-    [[NSUserDefaults standardUserDefaults] synchronize];
-    
-    
-    if( err == noErr)
+    //OSStatus err = noErr;
+//    
+//    
+//    //NSURL *url = [NSURL URLWithString:@"http://10.1.25.222:2060/?op=getCA"];
+//    //NSData *certData=[NSData dataWithContentsOfURL:url];
+//    
+    SecCertificateRef rootCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef) rootCertData);
+
+    if (!rootCert)
     {
-        NSLog(@"Install root certificate success");
-        
-    }
-    else if( err == errSecDuplicateItem )
-    {
-        NSLog(@"duplicate root certificate entry");
+        NSLog(@"Invalid cert");
+        loginFailed.text=@"Failed to parse the certificate.";
+        loginFailed.hidden=NO;
     }
     else
     {
-        NSLog(@"install root certificate failure");
+        [[NSUserDefaults standardUserDefaults] setObject:rootCertData forKey:@"CertData"];
+        [[NSUserDefaults standardUserDefaults] setBool:YES forKey:KEY_STORED];
+        [[NSUserDefaults standardUserDefaults] synchronize];
     }
+//
+//    CFTypeRef result;
+//    
+//    NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
+//                          (__bridge id)kSecClassCertificate, kSecClass,
+//                          rootCert, kSecValueRef,
+//                          CERT_ID,kSecAttrLabel,
+//                          nil];
+//    
+//    err = SecItemAdd((__bridge CFDictionaryRef)dict, &result);
+    
+  //  NSLog(@"%@",result);
+    
+    
+    
+    
+//    if( err == noErr)
+//    {
+//        NSLog(@"Install root certificate success");
+//        
+//    }
+//    else if( err == errSecDuplicateItem )
+//    {
+//        NSLog(@"duplicate root certificate entry");
+//    }
+//    else
+//    {
+//        NSLog(@"install root certificate failure");
+//    }
 
 }
 
@@ -419,5 +454,11 @@
 //    
 //    return securityError;
 //}
+
+- (BOOL)isServerReachable
+{
+    AFNetworkReachabilityManager *netReach = [AFNetworkReachabilityManager managerForDomain:serverField.text];
+    return [netReach isReachable];
+}
 
 @end

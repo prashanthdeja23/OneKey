@@ -84,11 +84,16 @@
 
 - (void)swapFromViewController:(UIViewController *)fromViewController toViewController:(UIViewController *)toViewController
 {
-    toViewController.view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+    CGRect newRect = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+    toViewController.view.frame = newRect;
+   
     
     [fromViewController willMoveToParentViewController:nil];
     [self addChildViewController:toViewController];
-    [self transitionFromViewController:fromViewController toViewController:toViewController duration:.25 options:UIViewAnimationOptionTransitionCrossDissolve animations:nil completion:^(BOOL finished) {
+    [self transitionFromViewController:fromViewController toViewController:toViewController duration:.25 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+        
+        self.view.frame=toViewController.view.bounds;
+    } completion:^(BOOL finished) {
         [fromViewController removeFromParentViewController];
         [toViewController didMoveToParentViewController:self];
     }];

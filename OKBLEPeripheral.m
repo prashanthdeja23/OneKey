@@ -8,7 +8,7 @@
 
 #import "OKBLEPeripheral.h"
 
-#define MAX_RSSI 50                 // MAX Rssi Being monitored.
+#define MAX_RSSI 10                 // MAX Rssi Being monitored.
 
 @implementation OKBLEPeripheral
 
@@ -42,6 +42,7 @@
         rssiValues=nil;         // If the peripheral got DisConn or something , dont do anythign on it.
         [self.rssiArrayLock unlock];
     }
+    
 }
 
 - (NSNumber*)avgRssi

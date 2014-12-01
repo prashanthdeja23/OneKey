@@ -21,6 +21,7 @@
 
 extern NSString *LOGGED_IN_KEY;
 extern NSString *DID_OPEN_DOOR_NOTIFICATION;
+extern NSString *BLUETOOTh_STATE_CHANGED;
 
 @interface OKMainViewController ()
 
@@ -118,9 +119,14 @@ extern NSString *DID_OPEN_DOOR_NOTIFICATION;
     [self.profileImageView addBorderWithColor:[OKUtility colorFromHexString:@"2CA4CE"] andWidth:4];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(showUnlockedMsg:) name:DID_OPEN_DOOR_NOTIFICATION object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(bluetoothStateChanged:) name:BLUETOOTh_STATE_CHANGED object:nil];
     
     // Do any additional setup after loading the view.
     
+    if (!manager.isBluetoothOn)
+    {
+        [self showAlert:@"Bluetooth is turned off. Please turn it on"];
+    }
     
 }
 
@@ -247,6 +253,19 @@ extern NSString *DID_OPEN_DOOR_NOTIFICATION;
     }
 }
 
+- (void)bluetoothStateChanged:(NSNotification*)notification
+{
+    OKBLEManager *manager=[OKBLEManager sharedManager];
+    if (manager.isBluetoothOn)
+    {
+        [self showAlert:@"Bluetooth turned on, Looking for doors."];
+    }
+    else
+    {
+        [self showAlert:@"Please turn on bluetooth and try again."];
+    }
+}
+
 - (void)showUnlockedMsg:(NSNotification*)notification
 {
     NSDictionary *dict = [notification userInfo];
@@ -287,6 +306,24 @@ extern NSString *DID_OPEN_DOOR_NOTIFICATION;
     {
         [newView performSelector:@selector(removeFromSuperview) withObject:nil afterDelay:2.0];
     }];
+}
+
+- (void)showAlert:(NSString*)alert
+{
+    alertLabel.text=alert;
+    alertLabel.alpha=0.0;
+    
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationDuration:0.45f];
+    [UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+    
+    [UIView setAnimationRepeatCount:5];
+    [UIView setAnimationRepeatAutoreverses:YES];
+    
+    alertLabel.alpha=1.0;
+    
+    [UIView commitAnimations];
+    
 }
 
 @end

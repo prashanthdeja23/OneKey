@@ -12,8 +12,9 @@
 {
     IBOutlet UILabel                 *nameLabel;
     IBOutlet UILabel                 *titleLabel;
-    
+    IBOutlet UILabel                 *alertLabel;
 }
+
 - (IBAction)clickedOptionsButton:(UIButton*)btn;
 
 @property (nonatomic, weak) OKContainerViewController *containerViewController;
@@ -23,5 +24,7 @@
 @property (nonatomic,strong) IBOutlet UIImageView              *profileImageView;
 
 - (IBAction)badgeImageClicked:(UIButton*)btn;
+
+- (void)showAlert:(NSString*)alert;
 
 @end

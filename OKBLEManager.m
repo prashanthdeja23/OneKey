@@ -25,7 +25,9 @@
 #define RSSI_PADDING 20
 
 NSString *DID_OPEN_DOOR_NOTIFICATION=@"openDoor";
-float MinIntervalBetweenOpens=5.0;
+NSString *BLUETOOTh_STATE_CHANGED=@"BTTOFF";
+
+float MinIntervalBetweenOpens=15.0;
 
 @interface OKBLEManager ()
 
@@ -157,7 +159,15 @@ float MinIntervalBetweenOpens=5.0;
     else
     {
         // No door is near enough to open.
-        NSLog(@"No Door in proximity");
+        
+        if (![self isInRange:nearestDoor])
+        {
+            // NSLog(@"No Door in proximity");
+        }
+        else if (![self minOpenIntervalElapsed:nearestDoor])
+        {
+           // NSLog(@"Opened recently ");
+        }
     }
 }
 
@@ -238,7 +248,7 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     if (serverIpString.length)
     {
         
-        NSString *urlString=[NSString stringWithFormat:@"http://%@:2060/?op=loc",serverIpString];
+        NSString *urlString=[NSString stringWithFormat:@"https://%@:2062/?op=loc",serverIpString];
         OKUser *loggedInUser=[OKUser sharedUser];
         
         NSDictionary *dictionaryForParams=[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:[loggedInUser idBitString],peripheral.name, nil] forKeys:[NSArray arrayWithObjects:@"id",@"beacon", nil] ];
@@ -264,12 +274,14 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
         // create a credential from the certificate and ideneity, then reply to the challenge with the credential
         NSURLCredential *credential = [NSURLCredential credentialWithIdentity:idRef certificates:(__bridge NSArray*)certArray persistence:NSURLCredentialPersistencePermanent];
         
-      //   manager.credential=credential;
+         manager.credential=credential;
         
-        AFSecurityPolicy *secPolicy =[AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];
+        AFSecurityPolicy *secPolicy =[AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate];
         secPolicy.allowInvalidCertificates=YES;
+        secPolicy.pinnedCertificates=[NSArray arrayWithObject:[self getRootCA]];
+        secPolicy.validatesDomainName=NO;
         secPolicy.validatesCertificateChain=NO;
-     //   manager.securityPolicy=secPolicy;
+        manager.securityPolicy=secPolicy;
         
         int index=[self isAlreadyMonitoringPeripheral:peripheral];
         OKBLEPeripheral *okPeripheral=[self.intrestedBLEPeripherals objectAtIndex:index];
@@ -307,9 +319,7 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
          {
              // Error ..
              okPeripheral.isOpening=NO;
-            // [self openDoorHttpForPeripheral:peripheral];
          }];
-        
     }
 }
 
@@ -340,19 +350,29 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     return securityError;
 }
 
-- (BOOL)canOpenPeripheral:(OKBLEPeripheral *)peripheral
+- (BOOL)isInRange:(OKBLEPeripheral*)peripheral
 {
     OKUser *currentUser=[OKUser sharedUser];
     int minRssi=[peripheral getMinRssiForSensitivity:currentUser.sensitivity];
     
-    if (abs([peripheral.avgRssi intValue]) <= minRssi)
+    return abs([peripheral.avgRssi intValue]) <= minRssi;
+}
+
+- (BOOL)minOpenIntervalElapsed:(OKBLEPeripheral*)peripheral
+{
+    float timeSinceLastOpen=[peripheral timeSinceLastOpen];
+    if (timeSinceLastOpen>MinIntervalBetweenOpens && !peripheral.isOpening)
     {
-        float timeSinceLastOpen=[peripheral timeSinceLastOpen];
-        if (timeSinceLastOpen>MinIntervalBetweenOpens && !peripheral.isOpening)
-        {
-            return YES;
-        }
-        
+        return YES;
+    }
+    return NO;
+}
+
+- (BOOL)canOpenPeripheral:(OKBLEPeripheral *)peripheral
+{
+    if ([self isInRange:peripheral]&&[self minOpenIntervalElapsed:peripheral])
+    {
+        return YES;
     }
     return NO;
 }
@@ -385,12 +405,26 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     
     self.isConnectedForBLE=(central.state>=CBCentralManagerStatePoweredOn);
   
+    
     if (central.state==CBCentralManagerStatePoweredOn)
     {
         self.serviceUUIDs=[self uuidArrayForStringArray:[NSArray arrayWithObject:BLE_SERVICE_UUID]];
-        //[self startDiscoveringPheripheralWithServiceID:self.serviceUUIDs];
-        [self startDiscoveringPheripheralWithServiceID:nil];
+        [self startDiscoveringPheripheralWithServiceID:self.serviceUUIDs];
+        //[self startDiscoveringPheripheralWithServiceID:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
     }
+    else
+    {
+        if (central.state==CBCentralManagerStatePoweredOff)
+        {
+            [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
+        }
+    }
+}
+
+- (BOOL)isBluetoothOn
+{
+    return _centralManager.state!=CBCentralManagerStatePoweredOff;
 }
 
 - (void)startDiscoveringPheripheralWithServiceID:(NSArray*)serviceUUIDs
@@ -954,5 +988,10 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     [[UIApplication sharedApplication] setScheduledLocalNotifications:[NSArray arrayWithObject:notification]];
 }
 
+- (NSData*)getRootCA
+{
+    NSData *myData = [[NSUserDefaults standardUserDefaults] objectForKey:@"CertData"];
+    return myData;
+}
 
 @end

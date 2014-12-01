@@ -57,5 +57,7 @@ enum BLEDoorOpenError
 - (void)peripheralReadRssiValue:(CBPeripheral*)peripheral;
 - (void)openDoorAtIndex:(int)index;
 - (void)disableBLE;
+- (BOOL)isBluetoothOn;
+- (NSData*)getRootCA;
 
 @end
