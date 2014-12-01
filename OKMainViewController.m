@@ -123,11 +123,6 @@ extern NSString *BLUETOOTh_STATE_CHANGED;
     
     // Do any additional setup after loading the view.
     
-    if (!manager.isBluetoothOn)
-    {
-        [self showAlert:@"Bluetooth is turned off. Please turn it on"];
-    }
-    
 }
 
 - (void)didReceiveMemoryWarning
@@ -136,6 +131,24 @@ extern NSString *BLUETOOTh_STATE_CHANGED;
     // Dispose of any resources that can be recreated.
 }
 
+- (void)checkBTLEOn
+{
+    OKBLEManager *manager=[OKBLEManager sharedManager];
+    if (!manager.isBluetoothOn)
+    {
+        [self showAlert:@"Bluetooth is turned off. Please turn it on"];
+    }
+    else
+    {
+        alertLabel.alpha=0.0;
+    }
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self checkBTLEOn];
+}
 
 #pragma mark - Navigation
 
@@ -258,11 +271,20 @@ extern NSString *BLUETOOTh_STATE_CHANGED;
     OKBLEManager *manager=[OKBLEManager sharedManager];
     if (manager.isBluetoothOn)
     {
-        [self showAlert:@"Bluetooth turned on, Looking for doors."];
+        dispatch_async(dispatch_get_main_queue(), ^(void){
+            //Run UI Updates
+            [self showAlert:@"Bluetooth turned on, Looking for doors."];
+        });
+        
+        
     }
     else
     {
-        [self showAlert:@"Please turn on bluetooth and try again."];
+        dispatch_async(dispatch_get_main_queue(), ^(void){
+            //Run UI Updates
+            [self showAlert:@"Please turn on bluetooth and try again."];
+        });
+        
     }
 }
 

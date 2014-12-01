@@ -405,26 +405,29 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     
     self.isConnectedForBLE=(central.state>=CBCentralManagerStatePoweredOn);
   
+    [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
+    
     
     if (central.state==CBCentralManagerStatePoweredOn)
     {
         self.serviceUUIDs=[self uuidArrayForStringArray:[NSArray arrayWithObject:BLE_SERVICE_UUID]];
         [self startDiscoveringPheripheralWithServiceID:self.serviceUUIDs];
         //[self startDiscoveringPheripheralWithServiceID:nil];
-        [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
+     //   [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
     }
     else
     {
         if (central.state==CBCentralManagerStatePoweredOff)
         {
-            [[NSNotificationCenter defaultCenter] postNotificationName:BLUETOOTh_STATE_CHANGED object:nil];
+            
+            [self.intrestedBLEPeripherals removeAllObjects];
         }
     }
 }
 
 - (BOOL)isBluetoothOn
 {
-    return _centralManager.state!=CBCentralManagerStatePoweredOff;
+    return _centralManager.state == CBCentralManagerStatePoweredOn;
 }
 
 - (void)startDiscoveringPheripheralWithServiceID:(NSArray*)serviceUUIDs

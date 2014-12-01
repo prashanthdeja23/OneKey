@@ -306,7 +306,7 @@
 
 - (void)refreshBLEInfo
 {
-    if (shouldRefresh&&self.bleManager.intrestedBLEPeripherals.count)
+    if (shouldRefresh)
     {
         [doorsTableView reloadData];
     }
