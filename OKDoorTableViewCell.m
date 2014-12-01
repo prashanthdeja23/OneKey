@@ -64,7 +64,7 @@
 
 - (void)display
 {
-    doorDistance.text=[NSString stringWithFormat:@"%.0f",-1*[[self.doorInfo objectForKey:@"rssi"] floatValue]];
+    doorDistance.text=[NSString stringWithFormat:@"%.0f",100+[[self.doorInfo objectForKey:@"rssi"] floatValue]];
     NSString *nameStr=[self.doorInfo objectForKey:@"name"];
     
     if (nameStr.length==16)
